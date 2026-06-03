@@ -57,3 +57,13 @@ En su lugar, se inyectaron las interfaces de dominio mediante tokens (COMMENT_RE
 Resolución de Dependencias:
 
 Se actualizaron comments.module.ts, likes.module.ts y moderation.module.ts para conectar los tokens de dominio con las implementaciones de Prisma utilizando useClass, y exportando los servicios necesarios para que interactúen entre sí de forma limpia.
+
+Benjamin Parra: Refactorización de los módulos Comments, Likes y Moderation (Entidades y Repositorios). Reestructuración completa de la suite de testing: separación de pruebas de integración por módulo e implementación de pruebas unitarias puras con mocks.
+
+    1. Problemas Identificados (Sección Tests y Módulos)
+    Pruebas Monolíticas y Acopladas: El proyecto original contaba con un único archivo de pruebas de integración de más de 600 líneas que mezclaba todos los dominios. Además, no existían pruebas unitarias; todas las pruebas dependían directamente de la base de datos real, lo que imposibilitaba validar las reglas de negocio de forma aislada.
+    
+    2. Solución Implementada
+    Implementación de Pruebas Unitarias y Mocks: Se crearon suites de pruebas unitarias (.service.spec.ts) para los servicios. Utilizando Mocking (jest.fn()), se simularon las dependencias de infraestructura (Repositorios y Prisma) para probar la lógica de negocio pura de forma 100% aislada, demostrando la verdadera independencia de la capa de Aplicación exigida por Clean Architecture.
+    
+    Modularización de Pruebas de Integración: Se desarmó el monolito de pruebas original, creando archivos de integración específicos por cada dominio (comments.integration.spec.ts, likes.integration.spec.ts, etc.), mejorando la mantenibilidad y sumando validaciones de casos borde y seguridad (ej. inyección HTML).
