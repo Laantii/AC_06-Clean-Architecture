@@ -1,17 +1,19 @@
 import {
     BadRequestException,
+    Inject,
     Injectable,
     NotFoundException,
 } from "@nestjs/common"
-import { CreateCommentDto } from "@/posts/posts.dtos"
+import { CreateCommentDto } from "./comments.dtos"
 import { ModerationService } from "@/moderation/moderation.service"
 import { PostsService } from "@/posts/posts.service"
-import { PrismaService } from "@/shared/prisma.service"
+import { CommentRepository, COMMENT_REPOSITORY } from "./domain/comment.repository"
 
 @Injectable()
 export class CommentsService {
     constructor(
-        private readonly prisma: PrismaService,
+        @Inject(COMMENT_REPOSITORY)
+        private readonly commentRepository: CommentRepository,
         private readonly postsService: PostsService,
         private readonly moderationService: ModerationService,
     ) {}
@@ -19,10 +21,7 @@ export class CommentsService {
     async listByPostId(postId: string) {
         await this.assertPostExists(postId)
 
-        const comments = await this.prisma.comment.findMany({
-            where: { postId },
-            orderBy: { createdAt: "desc" },
-        })
+        const comments = await this.commentRepository.findByPostId(postId)
 
         return {
             total_comments: comments.length,
@@ -40,12 +39,10 @@ export class CommentsService {
             )
         }
 
-        return this.prisma.comment.create({
-            data: {
-                postId,
-                content: data.content,
-                source: "comments-module",
-            },
+        return this.commentRepository.create({
+            postId,
+            content: data.content,
+            source: "comments-module",
         })
     }
 

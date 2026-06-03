@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from "@nestjs/common"
-import { PrismaService } from "@/shared/prisma.service"
+import { Inject, Injectable } from "@nestjs/common"
+import { ModerationRepository, MODERATION_REPOSITORY } from "./domain/moderation.repository"
 
 export type ModerationResult = {
     approved: boolean
@@ -14,10 +14,13 @@ const buildFuzzyRegex = (word: string) => {
 
 @Injectable()
 export class ModerationService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        @Inject(MODERATION_REPOSITORY)
+        private readonly moderationRepository: ModerationRepository,
+    ) {}
 
     async moderate(text: string): Promise<ModerationResult> {
-        const words = await this.prisma.prohibitedWord.findMany()
+        const words = await this.moderationRepository.findAll()
 
         for (const pw of words) {
             const regex = buildFuzzyRegex(pw.word)
@@ -34,27 +37,14 @@ export class ModerationService {
     }
 
     findAll() {
-        return this.prisma.prohibitedWord.findMany({
-            orderBy: { createdAt: "desc" },
-        })
+        return this.moderationRepository.findAll()
     }
 
     create(word: string, category: string) {
-        return this.prisma.prohibitedWord.create({ data: { word, category } })
+        return this.moderationRepository.create({ word, category })
     }
 
     async delete(id: string) {
-        try {
-            return await this.prisma.prohibitedWord.delete({ where: { id } })
-        } catch (err: unknown) {
-            if (
-                err instanceof Error &&
-                "code" in err &&
-                (err as { code: string }).code === "P2025"
-            ) {
-                throw new NotFoundException("Palabra prohibida no encontrada")
-            }
-            throw err
-        }
+        return this.moderationRepository.delete(id)
     }
 }

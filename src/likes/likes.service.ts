@@ -1,16 +1,18 @@
 import {
     BadRequestException,
+    Inject,
     Injectable,
     NotFoundException,
 } from "@nestjs/common"
-import { AddLikeDto } from "@/posts/posts.dtos"
+import { AddLikeDto } from "./likes.dtos"
 import { PostsService } from "@/posts/posts.service"
-import { PrismaService } from "@/shared/prisma.service"
+import { LikeRepository, LIKE_REPOSITORY } from "./domain/like.repository"
 
 @Injectable()
 export class LikesService {
     constructor(
-        private readonly prisma: PrismaService,
+        @Inject(LIKE_REPOSITORY)
+        private readonly likeRepository: LikeRepository,
         private readonly postsService: PostsService,
     ) {}
 
@@ -23,13 +25,11 @@ export class LikesService {
             throw new BadRequestException("El peso debe ser al menos 1")
         }
 
-        return this.prisma.like.create({
-            data: {
-                postId,
-                reactionType: data.reactionType ?? "like",
-                weight,
-                source: "likes-module",
-            },
+        return this.likeRepository.create({
+            postId,
+            reactionType: data.reactionType ?? "like",
+            weight,
+            source: "likes-module",
         })
     }
 
