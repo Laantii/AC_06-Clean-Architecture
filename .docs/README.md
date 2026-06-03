@@ -23,3 +23,37 @@ Edgar Melgarejo: Refactorización de los módulos Posts y Categories. Diseño e 
     ) {}
     // ...
     }
+
+
+Rodrigo Reyes: Refactorización: Módulos de Comentarios, Likes y Moderación
+Problemas identificados
+Falta de cohesión (DTOs mal ubicados): Los objetos de transferencia de datos (DTOs) para la creación de comentarios y likes estaban centralizados erróneamente en el módulo de Posts, lo que generaba un acoplamiento innecesario y rompía la cohesión de los módulos.
+
+Violación de la Inversión de Dependencias: Los casos de uso (CommentsService, LikesService y ModerationService) dependían directamente del ORM (PrismaService). Esto ataba la lógica de negocio a los detalles de infraestructura de la base de datos, impidiendo cumplir con las capas de Clean Architecture.
+
+Cómo lo solucionamos
+Para aislar la lógica de negocio y mejorar la estructura, se implementó el Patrón Repositorio y se reorganizaron los módulos aplicando los siguientes pasos:
+
+Aislamiento de DTOs: - Se extrajeron CreateCommentDto y AddLikeDto del archivo posts.dtos.ts.
+
+Se crearon archivos dedicados (comments.dtos.ts y likes.dtos.ts) dentro de sus respectivos módulos, actualizando las importaciones en los controladores y servicios correspondientes.
+
+Creación de la Capa de Dominio:
+
+Se definieron las Entidades de Dominio puras (Comment, Like y ProhibitedWord) que modelan los datos independientemente del esquema de base de datos.
+
+Se crearon las Interfaces de Repositorio (CommentRepository, LikeRepository, ModerationRepository) para establecer los contratos de persistencia que la aplicación necesita.
+
+Creación de la Capa de Infraestructura:
+
+Se implementaron clases adaptadoras específicas (PrismaCommentRepository, PrismaLikeRepository, PrismaModerationRepository) que cumplen con las interfaces del dominio encapsulando todas las consultas directas a Prisma.
+
+Desacoplamiento de la Capa de Aplicación (Servicios):
+
+Se eliminó la inyección de PrismaService en los tres servicios principales.
+
+En su lugar, se inyectaron las interfaces de dominio mediante tokens (COMMENT_REPOSITORY, LIKE_REPOSITORY, MODERATION_REPOSITORY), delegando el control de errores de base de datos a la infraestructura.
+
+Resolución de Dependencias:
+
+Se actualizaron comments.module.ts, likes.module.ts y moderation.module.ts para conectar los tokens de dominio con las implementaciones de Prisma utilizando useClass, y exportando los servicios necesarios para que interactúen entre sí de forma limpia.
