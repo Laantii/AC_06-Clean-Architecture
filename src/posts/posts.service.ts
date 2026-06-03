@@ -1,12 +1,16 @@
-import { BadRequestException, Injectable } from "@nestjs/common"
+import { BadRequestException, Inject, Injectable } from "@nestjs/common"
 import { CreatePostDto } from "@/posts/posts.dtos"
+import {
+    POST_REPOSITORY,
+    PostRepository,
+} from "@/posts/domain/post.repository"
 import { ModerationService } from "@/moderation/moderation.service"
-import { PrismaService } from "@/shared/prisma.service"
 
 @Injectable()
 export class PostsService {
     constructor(
-        private readonly prisma: PrismaService,
+        @Inject(POST_REPOSITORY)
+        private readonly postRepository: PostRepository,
         private readonly moderationService: ModerationService,
     ) {}
 
@@ -20,24 +24,24 @@ export class PostsService {
             )
         }
 
-        return await this.prisma.post.create({ data })
+        return await this.postRepository.create({
+            title: data.title,
+            description: data.description,
+            imageUrl: data.imageUrl,
+            categoryId: data.categoryId,
+        })
     }
 
     findAll() {
-        return this.prisma.post.findMany({
-            orderBy: { createdAt: "desc" },
-        })
+        return this.postRepository.findAll()
     }
 
     findById(id: string) {
-        return this.prisma.post.findUnique({ where: { id } })
+        return this.postRepository.findById(id)
     }
 
     async getFeedPosts(categoryId?: string) {
-        const posts = await this.prisma.post.findMany({
-            where: categoryId ? { categoryId } : undefined,
-            include: { comments: true, likes: true, category: true },
-        })
+        const posts = await this.postRepository.findWithRelations(categoryId)
 
         return posts.map((post) => ({
             id: post.id,
